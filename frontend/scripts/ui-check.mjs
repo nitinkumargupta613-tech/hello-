@@ -42,7 +42,8 @@ try {
     .getByPlaceholder("e.g. big pit on main road near gate 2, bikes skidding")
     .fill("big pit on main road near gate 2, bikes skidding");
   await page.getByRole("button", { name: /submit report/i }).click();
-  await page.waitForSelector("text=Report submitted", { timeout: 20000 });
+  // the first request after an API start loads the model, so allow for it
+  await page.waitForSelector("text=Report submitted", { timeout: 120000 });
   const ticketText = await page.locator("code, .font-mono").first().textContent();
   const ticketId = (ticketText ?? "").trim();
   check(/^CS-/.test(ticketId), "submission returns a ticket id", ticketId);
@@ -140,7 +141,13 @@ try {
   await page.screenshot({ path: "scripts/shot-dashboard.png", fullPage: true });
 
   // a change made in the database has to show up after a refresh
-  const target = await page.locator("table tbody tr").first().locator(".font-mono").first().textContent();
+  const target = await page
+    .locator("table tbody tr")
+    .filter({ hasText: "Submitted" })
+    .first()
+    .locator(".font-mono")
+    .first()
+    .textContent();
   const ticket = (target ?? "").trim();
   const changed = await page.evaluate(async (ticketId) => {
     const token = localStorage.getItem("civicsense.token");
@@ -155,7 +162,7 @@ try {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: "resolved", reason: "ui check" }),
+      body: JSON.stringify({ status: "triaged", reason: "ui check" }),
     });
     return response.ok ? "ok" : `http ${response.status}`;
   }, ticket);
@@ -169,7 +176,7 @@ try {
     .first()
     .textContent();
   check(
-    /resolved/i.test(rowText ?? ""),
+    /triaged/i.test(rowText ?? ""),
     "the change is visible after a refresh",
     ticket,
   );

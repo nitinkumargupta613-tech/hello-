@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from . import config
+from .db import engine
 from .routers import auth, complaints, tickets
 
 app = FastAPI(
@@ -29,4 +31,20 @@ app.include_router(tickets.router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "model_version": config.MODEL_VERSION}
+    """Liveness plus a real database check.
+
+    A green health response has to mean the app can actually serve traffic, so
+    the database is pinged here instead of trusting that the process is up.
+    """
+    database = "ok"
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:  # the database may be down
+        database = f"unavailable: {exc.__class__.__name__}"
+    status = "ok" if database == "ok" else "degraded"
+    return {
+        "status": status,
+        "database": database,
+        "model_version": config.MODEL_VERSION,
+    }

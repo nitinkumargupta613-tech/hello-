@@ -35,13 +35,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("X-Actor-Id", "reporter");
   }
 
-  const response = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-    // Always read the current state of the database: a report added or
-    // removed on the server has to show up on the next refresh.
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers,
+      // Always read the current state of the database: a report added or
+      // removed on the server has to show up on the next refresh.
+      cache: "no-store",
+    });
+  } catch {
+    // The request never reached the server.
+    throw new ApiError(
+      0,
+      "Cannot reach the API. Is the backend running? Start it with scripts\\run.bat",
+    );
+  }
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`;
     try {

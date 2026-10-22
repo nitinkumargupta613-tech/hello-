@@ -15,6 +15,8 @@ engine = create_engine(
     pool_size=5,
     max_overflow=10,
     future=True,
+    # Fail fast when the database is down instead of hanging the request.
+    connect_args={"connect_timeout": 5},
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
