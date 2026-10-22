@@ -13,6 +13,8 @@ model is not confident about for a human to check.
 
 | Capability | How |
 | --- | --- |
+| **Location by name** | The report form geocodes what a person types. A campus gazetteer answers first ("main gate 2" resolves instantly and offline), anything else falls through to OpenStreetMap. |
+| **Location from the device** | One tap asks the browser for the current position, names it, and drops the pin there. |
 | **Issue classification** | MiniLM sentence embeddings against per-category prototypes, blended with a keyword rule layer. Six categories: pothole, garbage, water leak, streetlight, drainage, other. |
 | **Human in the loop** | Low confidence (< 0.50) or a small gap between the top two classes flags the report for review. An admin confirms or overrides the category. |
 | **Photo understanding** | Optional zero-shot CLIP classification of the uploaded photo, fused with the text signal. |
@@ -138,6 +140,8 @@ weights, review thresholds, duplicate scoring, routing rules — live in
 | `GET` | `/complaints/stats/overview` | admin | Totals |
 | `GET` | `/complaints/stats/workload` | admin | Department load against capacity |
 | `GET` | `/complaints/stats/hotspots` | admin | Recurring clusters |
+| `GET` | `/geo/search?q=` | public | Resolve a place name into a point |
+| `GET` | `/geo/reverse?lat=&lng=` | public | Describe a point in words |
 | `GET` | `/tickets/{ticket_id}` | public | Track a ticket |
 | `GET` | `/health` | public | Liveness and model version |
 

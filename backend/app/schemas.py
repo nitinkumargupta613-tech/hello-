@@ -32,6 +32,7 @@ class ComplaintOut(BaseModel):
     status: str
     lat: float
     lng: float
+    location_label: str | None = None
     incident_id: int | None
     category_key: str | None
     category_confidence: float | None

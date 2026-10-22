@@ -95,6 +95,7 @@ class Incident(Base):
     location: Mapped["Geography"] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False), nullable=False
     )
+    location_label: Mapped[str | None] = mapped_column(String(160), nullable=True)
     status: Mapped[str] = mapped_column(String(24), default="open")
     merged_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -115,6 +116,7 @@ class Complaint(Base):
     )
     lat: Mapped[float] = mapped_column(Float)
     lng: Mapped[float] = mapped_column(Float)
+    location_label: Mapped[str | None] = mapped_column(String(160), nullable=True)
 
     status: Mapped[str] = mapped_column(String(24), default="submitted", index=True)
     incident_id: Mapped[int | None] = mapped_column(

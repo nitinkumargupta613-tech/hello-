@@ -156,6 +156,14 @@ export default function ComplaintDetail({ complaint, onChanged, onClose }: Props
         </div>
 
         <dl className="grid grid-cols-2 gap-2 text-xs">
+          {complaint.location_label ? (
+            <div className="col-span-2 rounded-xl bg-brand-50/70 p-2.5">
+              <dt className="text-brand-700/80">Location</dt>
+              <dd className="mt-0.5 font-medium text-brand-900">
+                {complaint.location_label}
+              </dd>
+            </div>
+          ) : null}
           <div className="rounded-xl bg-slate-50 p-2.5">
             <dt className="text-slate-500">Reported</dt>
             <dd className="mt-0.5 text-slate-800">{formatDateTime(complaint.created_at)}</dd>

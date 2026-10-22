@@ -12,6 +12,10 @@ function check(ok, label, detail = "") {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const context = page.context();
+// Pretend the browser may share a position, and give it a known one.
+await context.grantPermissions(["geolocation"], { origin: BASE });
+await context.setGeolocation({ latitude: 19.0771, longitude: 72.8792 });
 const consoleErrors = [];
 page.on("console", (msg) => {
   if (msg.type() === "error") consoleErrors.push(msg.text());
@@ -36,9 +40,33 @@ try {
   const submitMap = page.locator("form .leaflet-container").first();
   await submitMap.scrollIntoViewIfNeeded();
   await submitMap.click({ position: { x: 180, y: 90 } });
-  await page.waitForTimeout(400);
-  const lat = await page.locator('input[type="number"]').first().inputValue();
-  check(Boolean(lat) && Number(lat) !== 19.076, "clicking the map moves the pin", `lat=${lat}`);
+  await page.waitForTimeout(600);
+  const coords = await page.locator("form .tabular-nums").first().textContent();
+  check(
+    /19\.\d{5}, 72\.\d{5}/.test(coords ?? ""),
+    "clicking the map moves the pin",
+    (coords ?? "").trim(),
+  );
+
+  // a place name can be searched instead of typing coordinates
+  await page.getByPlaceholder(/search a place/i).fill("Library Crossing");
+  await page.getByRole("button", { name: /find place/i }).click();
+  await page.waitForTimeout(1200);
+  const resolved = await page.locator("form").first().textContent();
+  check(
+    /library crossing/i.test(resolved ?? ""),
+    "searching a place name sets the location",
+  );
+
+  // the browser can share the current position
+  await page.getByRole("button", { name: /use my location/i }).click();
+  await page.waitForTimeout(1500);
+  const located = await page.locator("form").first().textContent();
+  check(
+    /19\.077\d*, 72\.879\d*/.test(located ?? "") ||
+      /taken from your device/i.test(located ?? ""),
+    "use my location fills the position",
+  );
 
   await page
     .getByPlaceholder("e.g. big pit on main road near gate 2, bikes skidding")
@@ -112,22 +140,30 @@ try {
   const hotspotTiles = await page.locator(".leaflet-tile-loaded").count();
   check(hotspotTiles > 0, "hotspot map tiles loaded", `${hotspotTiles} tiles`);
 
-  // admin can add a location with coordinates
+  // admin can add a location, by place name or by the current position
   const rowsBefore = await page.locator("table tbody tr").count();
   await page.getByRole("button", { name: /add location/i }).click();
   await page.waitForSelector("text=Add a location", { timeout: 15000 });
-  const coordText = await page.locator("text=Coordinates:").textContent();
-  check(/\d+\.\d{6}, \d+\.\d{6}/.test(coordText ?? ""), "coordinates are shown", coordText?.trim());
+
+  await page.getByPlaceholder(/search a place/i).fill("Sports Complex");
+  await page.getByRole("button", { name: /find place/i }).click();
+  await page.waitForTimeout(1200);
+  const coordText = await page.locator("form .tabular-nums").first().textContent();
+  check(
+    /19\.083\d*, 72\.879\d*/.test(coordText ?? ""),
+    "the place name is resolved to a point",
+    (coordText ?? "").trim(),
+  );
 
   const map = page.locator("form .leaflet-container").first();
   await map.scrollIntoViewIfNeeded();
   await map.click({ position: { x: 120, y: 90 } });
-  await page.waitForTimeout(400);
-  const latAfter = await page.locator('input[type="number"]').first().inputValue();
+  await page.waitForTimeout(600);
+  const latAfter = await page.locator("form .tabular-nums").first().textContent();
   check(
-    Boolean(latAfter) && Number(latAfter) !== 19.076,
+    /19\.\d{5}, 72\.\d{5}/.test(latAfter ?? ""),
     "clicking the map moves the new pin",
-    `lat=${latAfter}`,
+    (latAfter ?? "").trim(),
   );
 
   await page

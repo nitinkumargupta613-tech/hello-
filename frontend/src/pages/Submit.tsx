@@ -2,16 +2,17 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api";
-import MapPicker, { type LatLng } from "../components/MapPicker";
+import LocationPicker from "../components/LocationPicker";
 import PriorityBreakdown from "../components/PriorityBreakdown";
 import { formatPercent } from "../format";
+import type { LatLng } from "../components/MapPicker";
 import type { CreateComplaintResponse } from "../types";
 
 const DEFAULT_POINT: LatLng = { lat: 19.076, lng: 72.8777 };
-
 export default function Submit() {
   const [description, setDescription] = useState("");
   const [point, setPoint] = useState<LatLng>(DEFAULT_POINT);
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [reporterName, setReporterName] = useState("");
   const [reporterContact, setReporterContact] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -28,6 +29,7 @@ export default function Submit() {
       form.append("description", description.trim());
       form.append("lat", String(point.lat));
       form.append("lng", String(point.lng));
+      if (locationLabel) form.append("location_label", locationLabel);
       if (reporterName) form.append("reporter_name", reporterName);
       if (reporterContact) form.append("reporter_contact", reporterContact);
       files.forEach((file) => form.append("photos", file));
@@ -166,39 +168,13 @@ export default function Submit() {
 
           <div>
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Where is it? Click the map or type the coordinates
+              Where is it? Search a place, share your location or drop the pin
             </span>
-            <MapPicker value={point} onChange={setPoint} />
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="mb-1 block text-xs text-slate-500">Latitude</span>
-                <input
-                  type="number"
-                  step="0.000001"
-                  inputMode="decimal"
-                  name="lat"
-                  value={point.lat}
-                  onChange={(event) =>
-                    setPoint({ ...point, lat: Number(event.target.value) })
-                  }
-                  className="field font-mono"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs text-slate-500">Longitude</span>
-                <input
-                  type="number"
-                  step="0.000001"
-                  inputMode="decimal"
-                  name="lng"
-                  value={point.lng}
-                  onChange={(event) =>
-                    setPoint({ ...point, lng: Number(event.target.value) })
-                  }
-                  className="field font-mono"
-                />
-              </label>
-            </div>
+            <LocationPicker
+              value={point}
+              onChange={setPoint}
+              onLabelChange={setLocationLabel}
+            />
           </div>
 
           <label className="block">

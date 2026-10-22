@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from . import config
 from .db import engine
-from .routers import auth, complaints, tickets
+from .routers import auth, complaints, geo, tickets
 
 app = FastAPI(
     title="CivicSense API",
@@ -26,6 +26,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(complaints.router)
+app.include_router(geo.router)
 app.include_router(tickets.router)
 
 

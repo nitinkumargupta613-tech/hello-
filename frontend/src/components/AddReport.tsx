@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import { api } from "../api";
-import MapPicker, { type LatLng } from "./MapPicker";
+import LocationPicker from "./LocationPicker";
+import type { LatLng } from "./MapPicker";
 
 const DEFAULT_POINT: LatLng = { lat: 19.076, lng: 72.8777 };
 
@@ -12,6 +13,7 @@ interface Props {
 export default function AddReport({ onCreated }: Props) {
   const [description, setDescription] = useState("");
   const [point, setPoint] = useState<LatLng>(DEFAULT_POINT);
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [reporterName, setReporterName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export default function AddReport({ onCreated }: Props) {
       form.append("description", description.trim());
       form.append("lat", String(point.lat));
       form.append("lng", String(point.lng));
+      if (locationLabel) form.append("location_label", locationLabel);
       if (reporterName.trim()) form.append("reporter_name", reporterName.trim());
 
       const created = await api.createComplaint(form);
@@ -56,45 +59,11 @@ export default function AddReport({ onCreated }: Props) {
 
       <form className="grid gap-6 p-5 lg:grid-cols-[1.1fr_1fr]" onSubmit={handleSubmit}>
         <div>
-          <MapPicker value={point} onChange={setPoint} />
-
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-1 block text-xs text-slate-500">Latitude</span>
-              <input
-                type="number"
-                step="0.000001"
-                inputMode="decimal"
-                name="lat"
-                value={point.lat}
-                onChange={(event) =>
-                  setPoint({ ...point, lat: Number(event.target.value) })
-                }
-                className="field font-mono"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs text-slate-500">Longitude</span>
-              <input
-                type="number"
-                step="0.000001"
-                inputMode="decimal"
-                name="lng"
-                value={point.lng}
-                onChange={(event) =>
-                  setPoint({ ...point, lng: Number(event.target.value) })
-                }
-                className="field font-mono"
-              />
-            </label>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-500">
-            Coordinates:{" "}
-            <span className="font-mono tabular-nums text-slate-700">
-              {point.lat.toFixed(6)}, {point.lng.toFixed(6)}
-            </span>
-          </p>
+          <LocationPicker
+            value={point}
+            onChange={setPoint}
+            onLabelChange={setLocationLabel}
+          />
         </div>
 
         <div className="space-y-4">

@@ -49,6 +49,11 @@ with engine.begin() as conn:
         text("CREATE INDEX IF NOT EXISTS ix_auth_sessions_expires_at "
              "ON auth_sessions (expires_at)")
     )
+    # The place a person named when they filed the report.
+    for table in ("complaints", "incidents"):
+        conn.execute(
+            text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS location_label varchar(160)")
+        )
 
 print("Creating spatial indexes ...")
 with engine.begin() as conn:

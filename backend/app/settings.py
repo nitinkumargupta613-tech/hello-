@@ -259,6 +259,35 @@ CAMPUS_ZONES: list[dict] = [
 ]
 
 # --------------------------------------------------------------------------
+# Campus gazetteer
+# --------------------------------------------------------------------------
+# Named places on the campus. The report form geocodes what a person types
+# against this list first, so a local name like "main gate 2" resolves
+# instantly and offline; anything else falls through to OpenStreetMap.
+CAMPUS_PLACES: list[dict] = [
+    {"name": "Main Gate 2", "aliases": ["main gate 2", "gate 2", "main gate two"], "lat": 19.0763, "lng": 72.8834},
+    {"name": "Main Gate 1", "aliases": ["main gate 1", "gate 1", "main gate one"], "lat": 19.0730, "lng": 72.8720},
+    {"name": "Central Avenue Junction", "aliases": ["central avenue junction", "central avenue", "central ave"], "lat": 19.0752, "lng": 72.8776},
+    {"name": "Hospital Road", "aliases": ["hospital road", "institute hospital", "hospital"], "lat": 19.0790, "lng": 72.8798},
+    {"name": "Hostel H3 Block", "aliases": ["hostel h3 block", "hostel h3", "h3 block"], "lat": 19.0702, "lng": 72.8742},
+    {"name": "Hostel H5 Block", "aliases": ["hostel h5 block", "hostel h5", "h5 block"], "lat": 19.0812, "lng": 72.8726},
+    {"name": "PG Hostel Block", "aliases": ["pg hostel block", "pg hostel"], "lat": 19.0720, "lng": 72.8830},
+    {"name": "School of Engineering", "aliases": ["school of engineering", "engineering block", "soe"], "lat": 19.0748, "lng": 72.8790},
+    {"name": "Library Crossing", "aliases": ["library crossing", "library"], "lat": 19.0770, "lng": 72.8790},
+    {"name": "Canteen Road", "aliases": ["canteen road", "canteen", "mess road"], "lat": 19.0740, "lng": 72.8760},
+    {"name": "Sports Complex", "aliases": ["sports complex", "gymkhana", "sports"], "lat": 19.0830, "lng": 72.8790},
+    {"name": "Academic Block", "aliases": ["academic block", "academic"], "lat": 19.0758, "lng": 72.8808},
+    {"name": "Lake View Road", "aliases": ["lake view road", "lake view", "lake"], "lat": 19.0790, "lng": 72.8740},
+    {"name": "Power House Lane", "aliases": ["power house lane", "power house", "powerhouse"], "lat": 19.0778, "lng": 72.8748},
+    {"name": "Institute Main Building", "aliases": ["institute main building", "main building", "admin block"], "lat": 19.0768, "lng": 72.8795},
+]
+
+CAMPUS_LAT = 19.0763
+CAMPUS_LNG = 72.8790
+CAMPUS_NAME = "Institute campus"
+
+
+# --------------------------------------------------------------------------
 # Classification thresholds
 # --------------------------------------------------------------------------
 # Below this top-1 confidence the complaint is flagged for human review.

@@ -259,6 +259,22 @@ def main() -> None:
     except urllib.error.HTTPError as exc:
         check(exc.code == 401, "dashboard data needs a session", str(exc.code))
 
+    # place lookup
+    found = get("/geo/search?q=library%20crossing&offline=true")
+    check(
+        found.get("found") and found["candidates"][0]["label"] == "Library Crossing",
+        "a campus place name resolves to a point",
+        found["candidates"][0]["label"] if found.get("candidates") else "none",
+    )
+    missing = get("/geo/search?q=zzz%20nowhere%20at%20all&offline=true")
+    check(not missing.get("found"), "an unknown place is not invented", str(missing.get("reason")))
+    reverse = get("/geo/reverse?lat=19.0762&lng=72.8777&offline=true")
+    check(
+        bool(reverse.get("label")),
+        "a point is described in words",
+        reverse.get("label", ""),
+    )
+
     # dashboard stats
     workload = get("/complaints/stats/workload", admin_token)
     check(

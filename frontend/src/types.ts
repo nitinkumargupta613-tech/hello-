@@ -27,6 +27,7 @@ export interface Complaint {
   status: string;
   lat: number;
   lng: number;
+  location_label?: string | null;
   incident_id: number | null;
   category_key: string | null;
   category_confidence: number | null;

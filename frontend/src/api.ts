@@ -95,6 +95,28 @@ export const api = {
 
   me: () => request<Session>("/auth/me"),
 
+  searchPlace: (query: string) =>
+    request<{
+      found: boolean;
+      source?: string;
+      hint?: string;
+      candidates: {
+        label: string;
+        lat: number;
+        lng: number;
+        source: string;
+      }[];
+    }>(`/geo/search?q=${encodeURIComponent(query)}`),
+
+  reversePlace: (lat: number, lng: number) =>
+    request<{
+      label: string;
+      lat: number;
+      lng: number;
+      distance_m: number | null;
+      source: string;
+    }>(`/geo/reverse?lat=${lat}&lng=${lng}`),
+
   listComplaints: (filters: ComplaintFilters = {}) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {

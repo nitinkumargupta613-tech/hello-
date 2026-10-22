@@ -35,21 +35,10 @@ NOW = datetime.now(timezone.utc)
 CAMPUS_LAT, CAMPUS_LNG = 19.0760, 72.8777
 
 SPOTS = [
-    ("main gate 2", 19.0763, 72.8834),
-    ("central avenue junction", 19.0752, 72.8776),
-    ("hospital road", 19.0790, 72.8798),
-    ("hostel H3 block", 19.0702, 72.8742),
-    ("hostel H5 block", 19.0812, 72.8726),
-    ("school of engineering", 19.0748, 72.8790),
-    ("lake view road", 19.0790, 72.8740),
-    ("library crossing", 19.0770, 72.8790),
-    ("canteen road", 19.0740, 72.8760),
-    ("sports complex", 19.0830, 72.8790),
-    ("main gate 1", 19.0730, 72.8720),
-    ("PG hostel block", 19.0720, 72.8830),
-    ("academic block", 19.0758, 72.8808),
-    ("power house lane", 19.0778, 72.8748),
+    (place["name"].lower(), place["lat"], place["lng"])
+    for place in settings.CAMPUS_PLACES
 ]
+PLACE_NAMES = {place["name"].lower(): place["name"] for place in settings.CAMPUS_PLACES}
 
 TEMPLATES: dict[str, list[str]] = {
     "pothole": [
@@ -164,6 +153,7 @@ def build_records(target: int = settings.SEED_COMPLAINTS) -> list[dict]:
         photo: bool = False,
         group: int | None = None,
         vague: bool = False,
+        place: str | None = None,
     ) -> None:
         records.append(
             {
@@ -176,6 +166,7 @@ def build_records(target: int = settings.SEED_COMPLAINTS) -> list[dict]:
                 "photo": photo,
                 "group": group,
                 "vague": vague,
+                "location_label": place,
             }
         )
 
@@ -201,7 +192,9 @@ def build_records(target: int = settings.SEED_COMPLAINTS) -> list[dict]:
     scale = max(0.25, target / float(settings.SEED_COMPLAINTS))
     group_count = max(4, int(len(duplicate_groups) * scale))
     for group_index, (category, loc_name) in enumerate(duplicate_groups[:group_count]):
-        lat, lng = next((s[1], s[2]) for s in SPOTS if s[0] == loc_name)
+        lat, lng = next(
+            (s[1], s[2]) for s in SPOTS if s[0].lower() == loc_name.lower()
+        )
         members = RNG.choice([2, 2, 3])
         base_description = RNG.choice(TEMPLATES[category]).format(loc=loc_name)
         for i in range(members):
@@ -220,6 +213,7 @@ def build_records(target: int = settings.SEED_COMPLAINTS) -> list[dict]:
                 category,
                 RNG.uniform(0.5, 45),
                 group=group_index,
+                place=PLACE_NAMES.get(loc_name.lower(), loc_name.title()),
             )
 
     # 2. Recurring hotspot: repeated potholes along central avenue over 5 months.
@@ -267,6 +261,7 @@ def build_records(target: int = settings.SEED_COMPLAINTS) -> list[dict]:
             category,
             age_days(),
             photo=(RNG.random() < 0.06),
+            place=PLACE_NAMES.get(loc_name.lower(), loc_name.title()),
         )
 
     return records[:target]
@@ -360,6 +355,7 @@ def main() -> None:
                 location=from_shape(Point(rec["lng"], rec["lat"]), srid=4326),
                 lat=rec["lat"],
                 lng=rec["lng"],
+                location_label=rec.get("location_label"),
                 status=status,
                 incident_id=incident.id,
                 category_key=category,
