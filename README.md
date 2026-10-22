@@ -30,9 +30,11 @@ model is not confident about for a human to check.
 | | |
 | --- | --- |
 | ![Report an issue](frontend/scripts/shot-report.png) | ![Operations dashboard](frontend/scripts/shot-dashboard.png) |
-| Report an issue — map, photo and coordinates | Operations dashboard — queue, review and workload |
-| ![Admin sign in](frontend/scripts/shot-login.png) | ![Track a ticket](frontend/scripts/shot-ticket.png) |
-| Admin sign in | Track a ticket |
+| Report an issue — place name, device location or a pin on the map | Operations dashboard — queue, review and workload |
+| ![Location lookup](frontend/scripts/shot-location.png) | ![Admin sign in](frontend/scripts/shot-login.png) |
+| The device position lands in the box and the map moves there | Admin sign in |
+| ![Track a ticket](frontend/scripts/shot-ticket.png) | |
+| Track a ticket | |
 
 ## Tech stack
 

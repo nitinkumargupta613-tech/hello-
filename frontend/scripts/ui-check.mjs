@@ -51,16 +51,52 @@ try {
   // a place name can be searched instead of typing coordinates
   await page.getByPlaceholder(/search a place/i).fill("Library Crossing");
   await page.getByRole("button", { name: /find place/i }).click();
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(1500);
   const resolved = await page.locator("form").first().textContent();
   check(
     /library crossing/i.test(resolved ?? ""),
     "searching a place name sets the location",
   );
+  const boxAfterSearch = await page.getByPlaceholder(/search a place/i).inputValue();
+  check(
+    /library crossing/i.test(boxAfterSearch),
+    "the place name lands in the search box",
+    boxAfterSearch,
+  );
+  const mapAfterSearch = await page
+    .locator("form .leaflet-container")
+    .first()
+    .boundingBox();
+  check(Boolean(mapAfterSearch), "the map is on screen after the search");
+
+  // the map itself has to move to the place, not just the marker
+  await page.waitForTimeout(1200);
+  const markerBox = await page.locator(".leaflet-interactive").first().boundingBox();
+  if (mapAfterSearch && markerBox) {
+    const offsetX = Math.abs(
+      markerBox.x + markerBox.width / 2 - (mapAfterSearch.x + mapAfterSearch.width / 2),
+    );
+    const offsetY = Math.abs(
+      markerBox.y + markerBox.height / 2 - (mapAfterSearch.y + mapAfterSearch.height / 2),
+    );
+    check(
+      offsetX < 40 && offsetY < 40,
+      "the map shifts to the searched place",
+      `pin ${Math.round(offsetX)}px / ${Math.round(offsetY)}px from the centre`,
+    );
+  } else {
+    check(false, "the map shifts to the searched place", "no marker found");
+  }
 
   // the browser can share the current position
   await page.getByRole("button", { name: /use my location/i }).click();
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2000);
+  const boxAfterGps = await page.getByPlaceholder(/search a place/i).inputValue();
+  check(
+    boxAfterGps.length > 0,
+    "the detected location is written into the search box",
+    boxAfterGps,
+  );
   const located = await page.locator("form").first().textContent();
   check(
     /19\.077\d*, 72\.879\d*/.test(located ?? "") ||

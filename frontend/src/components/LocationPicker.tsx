@@ -22,6 +22,12 @@ const GEOLOCATION_MESSAGES: Record<number, string> = {
   3: "Finding your position took too long. Try again or pick a point on the map.",
 };
 
+/** "Near Library Crossing" reads better as a chip than in the search box. */
+function forBox(label: string | null): string | null {
+  if (!label) return null;
+  return label.replace(/^Near\s+/i, "");
+}
+
 export default function LocationPicker({ value, onChange, onLabelChange }: Props) {
   // Held in a ref so the lookup effect does not re-run when the parent
   // passes a new callback on every render.
@@ -35,8 +41,11 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
+  // The point the map should move to, set whenever the place changes outside
+  // a map click.
+  const [focus, setFocus] = useState<LatLng | null>(null);
 
-  // When the pin moves on the map, describe the new spot in words.
+  // Name the current point, and keep the search box in step with it.
   useEffect(() => {
     let active = true;
     api
@@ -45,6 +54,7 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
         if (!active) return;
         setPlace(result.label);
         labelCallback.current?.(result.label);
+        setQuery(forBox(result.label) ?? "");
       })
       .catch(() => {
         if (!active) return;
@@ -55,6 +65,16 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
       active = false;
     };
   }, [value.lat, value.lng]);
+
+  function selectPlace(label: string, point: LatLng, message: string) {
+    onChange(point);
+    setFocus(point);
+    setPlace(label);
+    setQuery(forBox(label) ?? label);
+    labelCallback.current?.(label);
+    setCandidates([]);
+    setStatus(message);
+  }
 
   async function findPlace() {
     const text = query.trim();
@@ -74,10 +94,9 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
       }
       setCandidates(result.candidates);
       const best = result.candidates[0];
-      onChange({ lat: best.lat, lng: best.lng });
-      setPlace(best.label);
-      labelCallback.current?.(best.label);
-      setStatus(
+      selectPlace(
+        best.label,
+        { lat: best.lat, lng: best.lng },
         result.candidates.length > 1
           ? `${result.candidates.length} matches found, pick one below.`
           : "Location set from the place name.",
@@ -105,12 +124,9 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
           lng: Number(position.coords.longitude.toFixed(6)),
         };
         onChange(next);
+        setFocus(next);
         setCandidates([]);
         setStatus("Location taken from your device.");
-        api
-          .reversePlace(next.lat, next.lng)
-          .then((result) => setPlace(result.label))
-          .catch(() => setPlace(null));
       },
       (geoError) => {
         setLocating(false);
@@ -171,12 +187,13 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
             <li key={`${candidate.label}-${candidate.lat}`}>
               <button
                 type="button"
-                onClick={() => {
-                  onChange({ lat: candidate.lat, lng: candidate.lng });
-                  setPlace(candidate.label);
-                  labelCallback.current?.(candidate.label);
-                  setCandidates([]);
-                }}
+                onClick={() =>
+                  selectPlace(
+                    candidate.label,
+                    { lat: candidate.lat, lng: candidate.lng },
+                    "Location set from the place name.",
+                  )
+                }
                 className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
               >
                 {candidate.label}
@@ -197,7 +214,7 @@ export default function LocationPicker({ value, onChange, onLabelChange }: Props
       </p>
 
       <div className="mt-3">
-        <MapPicker value={value} onChange={onChange} />
+        <MapPicker value={value} onChange={onChange} focus={focus} />
       </div>
 
       <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
