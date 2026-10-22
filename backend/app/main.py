@@ -8,11 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import config
 from .routers import auth, complaints, tickets
 
-app = FastAPI(
-    title="CivicSense API",
-    description="AI powered civic intelligence and issue resolution platform.",
-    version="0.1.0",
-)
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
