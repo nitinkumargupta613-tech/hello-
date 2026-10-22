@@ -13,7 +13,9 @@ import type {
   WorkloadRow,
 } from "./types";
 
-const BASE = "/api";
+// In development the Vite dev server proxies "/api" to the local backend.
+// A deployed build talks to the API directly, so VITE_API_URL points at it.
+const BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 export class ApiError extends Error {
   status: number;

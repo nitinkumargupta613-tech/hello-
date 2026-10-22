@@ -96,6 +96,13 @@ npm run dev
 Or just run `scripts\run.bat` — it starts the database, the API and the web app
 and opens the browser. `scripts\run.bat --stop` shuts them down again.
 
+### Deploying it
+
+See [DEPLOY.md](DEPLOY.md) for the full flow — the web app on **Vercel**, the
+API on **Render** or **Railway**, and the database on **Neon** with PostGIS —
+including the environment variables, the CORS step and a troubleshooting
+table.
+
 ### Demo accounts
 
 | Username | Password | Role |
@@ -119,6 +126,7 @@ Copy `.env.example` to `.env` in the repository root and adjust:
 | `CIVICSENSE_MODEL_VERSION` | `minilm-l6-v2@2026-10` | Version stamped on every AI decision |
 | `CIVICSENSE_CLIP_ENABLED` | `0` | Enable zero-shot photo classification |
 | `CIVICSENSE_CLIP_MODEL` | `openai/clip-vit-base-patch32` | CLIP checkpoint |
+| `VITE_API_URL` | unset | Deployed builds call the API here instead of `/api` |
 
 Tunables that are not deployment specific — category prototypes, priority
 weights, review thresholds, duplicate scoring, routing rules — live in
