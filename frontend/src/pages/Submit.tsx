@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import MapPicker, { type LatLng } from "../components/MapPicker";
 import PriorityBreakdown from "../components/PriorityBreakdown";
+import { formatPercent } from "../format";
 import type { CreateComplaintResponse } from "../types";
 
 const DEFAULT_POINT: LatLng = { lat: 19.076, lng: 72.8777 };
@@ -41,37 +42,37 @@ export default function Submit() {
 
   if (result) {
     return (
-      <div className="mx-auto max-w-2xl space-y-5">
+      <div className="mx-auto max-w-2xl space-y-5" aria-live="polite">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-          <h1 className="text-xl font-semibold text-emerald-900">Report submitted</h1>
-          <p className="mt-1 text-sm text-emerald-800">
+          <h1 className="text-xl font-semibold text-emerald-900">Report Submitted</h1>
+          <p className="mt-1.5 text-sm text-emerald-800">
             Your ticket id is{" "}
-            <span className="font-mono font-semibold">{result.ticket_id}</span>. Keep it to track
-            progress.
+            <span className="font-mono font-semibold" translate="no">
+              {result.ticket_id}
+            </span>
+            . Keep it to track progress.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Classification
-          </h2>
+        <div className="card p-6">
+          <h2 className="eyebrow mb-3">Classification</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800 ring-1 ring-brand-100">
               {result.classification?.category_name ?? result.complaint.category_key}
             </span>
             {result.classification ? (
               <span className="text-xs text-slate-500">
-                {Math.round(result.classification.confidence * 100)}% confidence
+                {formatPercent(result.classification.confidence)} confidence
               </span>
             ) : null}
             {result.classification?.needs_review ? (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                a human will check this
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                A human will check this
               </span>
             ) : null}
           </div>
           {result.classification?.explanation.summary ? (
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
               {result.classification.explanation.summary}
             </p>
           ) : null}
@@ -79,10 +80,10 @@ export default function Submit() {
 
         {result.duplicates.length > 0 ? (
           <div className="rounded-2xl border border-sky-200 bg-sky-50 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-sky-800">
-              We may already know about this
+            <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-sky-800">
+              We May Already Know About This
             </h2>
-            <p className="mt-1 text-sm text-sky-700">
+            <p className="mt-1.5 text-sm text-sky-700">
               {result.duplicates.length} similar report
               {result.duplicates.length === 1 ? "" : "s"} were filed nearby recently. The
               team will treat them as one issue, so nothing gets lost.
@@ -90,19 +91,19 @@ export default function Submit() {
             <ul className="mt-3 space-y-1.5">
               {result.duplicates.slice(0, 3).map((match) => (
                 <li key={match.ticket_id} className="text-xs text-sky-900">
-                  <span className="font-mono">{match.ticket_id}</span> · {match.relation} ·
-                  match {Math.round(match.score * 100)}% · {Math.round(match.distance_m)} m
-                  away
+                  <span className="font-mono" translate="no">
+                    {match.ticket_id}
+                  </span>{" "}
+                  · {match.relation} · match {formatPercent(match.score)} ·{" "}
+                  {Math.round(match.distance_m)} m away
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Priority breakdown
-          </h2>
+        <div className="card p-6">
+          <h2 className="eyebrow mb-4">Priority Breakdown</h2>
           <PriorityBreakdown
             explanation={result.priority}
             score={result.complaint.priority_score}
@@ -110,12 +111,9 @@ export default function Submit() {
           />
         </div>
 
-        <div className="flex gap-3">
-          <Link
-            to={`/ticket?id=${result.ticket_id}`}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500"
-          >
-            Track this ticket
+        <div className="flex flex-wrap gap-3">
+          <Link to={`/ticket?id=${result.ticket_id}`} className="btn btn-primary">
+            Track This Ticket
           </Link>
           <button
             type="button"
@@ -124,9 +122,9 @@ export default function Submit() {
               setDescription("");
               setFiles([]);
             }}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn btn-secondary"
           >
-            Report another issue
+            Report Another Issue
           </button>
         </div>
       </div>
@@ -134,18 +132,22 @@ export default function Submit() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr]">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">Report a civic issue</h1>
-        <p className="mt-1 text-sm text-slate-500">
+    <div className="grid gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
+      <section className="card p-6 sm:p-7">
+        <h1 className="text-xl font-semibold text-slate-900">Report a Civic Issue</h1>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
           Describe the problem, drop the pin on the map and we will classify it, score its
           priority and route it to the right department.
         </p>
 
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+        <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              What is the problem?
+              What is the problem?{" "}
+              <span className="text-rose-600" aria-hidden="true">
+                *
+              </span>
+              <span className="sr-only">(required)</span>
             </span>
             <textarea
               value={description}
@@ -153,14 +155,18 @@ export default function Submit() {
               rows={5}
               required
               minLength={5}
-              placeholder="e.g. big pit on main road near gate 2, bikes skidding"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              name="description"
+              placeholder="e.g. big pit on main road near gate 2, bikes skidding…"
+              className="field resize-y"
             />
+            <span className="mt-1.5 block text-xs text-slate-500">
+              The more concrete the description, the sharper the classification.
+            </span>
           </label>
 
           <div>
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Where is it? (click the map or type coordinates)
+              Where is it? Click the map or type the coordinates
             </span>
             <MapPicker value={point} onChange={setPoint} />
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -169,11 +175,13 @@ export default function Submit() {
                 <input
                   type="number"
                   step="0.000001"
+                  inputMode="decimal"
+                  name="lat"
                   value={point.lat}
                   onChange={(event) =>
                     setPoint({ ...point, lat: Number(event.target.value) })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                  className="field font-mono"
                 />
               </label>
               <label className="block">
@@ -181,11 +189,13 @@ export default function Submit() {
                 <input
                   type="number"
                   step="0.000001"
+                  inputMode="decimal"
+                  name="lng"
                   value={point.lng}
                   onChange={(event) =>
                     setPoint({ ...point, lng: Number(event.target.value) })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                  className="field font-mono"
                 />
               </label>
             </div>
@@ -202,8 +212,17 @@ export default function Submit() {
               onChange={(event) =>
                 setFiles(Array.from(event.target.files ?? []).slice(0, 4))
               }
-              className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+              className="w-full cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-3.5 py-3 text-sm text-slate-600 transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 file:shadow-sm"
             />
+            {files.length > 0 ? (
+              <span className="mt-1.5 block text-xs text-slate-500">
+                {files.length} photo{files.length === 1 ? "" : "s"} attached.
+              </span>
+            ) : (
+              <span className="mt-1.5 block text-xs text-slate-500">
+                Up to 4 photos. A picture helps the classifier.
+              </span>
+            )}
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -214,7 +233,9 @@ export default function Submit() {
               <input
                 value={reporterName}
                 onChange={(event) => setReporterName(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                name="reporter_name"
+                autoComplete="name"
+                className="field"
               />
             </label>
             <label className="block">
@@ -224,57 +245,78 @@ export default function Submit() {
               <input
                 value={reporterContact}
                 onChange={(event) => setReporterContact(event.target.value)}
-                placeholder="email or phone"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                name="reporter_contact"
+                autoComplete="email"
+                placeholder="email or phone…"
+                className="field"
               />
             </label>
           </div>
 
-          {error ? (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-          ) : null}
+          <p aria-live="polite" className="min-h-0">
+            {error ? (
+              <span className="block rounded-xl bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
+                {error}
+              </span>
+            ) : null}
+          </p>
 
           <button
             type="submit"
             disabled={submitting || description.trim().length < 5}
-            className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="btn btn-primary w-full"
           >
-            {submitting ? "Submitting…" : "Submit report"}
+            {submitting ? "Classifying & submitting…" : "Submit Report"}
           </button>
         </form>
       </section>
 
       <aside className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            What happens next
-          </h2>
-          <ol className="mt-3 space-y-3 text-sm text-slate-600">
-            <li>
-              <span className="font-medium text-slate-800">1. Automatic classification</span>
-              <p className="text-slate-500">
-                The report is matched against past issues to pick a category and confidence.
-              </p>
-            </li>
-            <li>
-              <span className="font-medium text-slate-800">2. Duplicate check</span>
-              <p className="text-slate-500">
-                Nearby recent reports are compared; you may be asked to confirm a duplicate.
-              </p>
-            </li>
-            <li>
-              <span className="font-medium text-slate-800">3. Priority scoring</span>
-              <p className="text-slate-500">
-                Safety, severity, impact, waiting time and repeat reports set the priority.
-              </p>
-            </li>
-            <li>
-              <span className="font-medium text-slate-800">4. Routing</span>
-              <p className="text-slate-500">
-                The report is assigned to the right department with a response target.
-              </p>
-            </li>
+        <div className="card p-6">
+          <h2 className="eyebrow">What Happens Next</h2>
+          <ol className="mt-4 space-y-4 text-sm">
+            {[
+              {
+                title: "Automatic classification",
+                body: "The report is matched against past issues to pick a category and a confidence.",
+              },
+              {
+                title: "Duplicate check",
+                body: "Nearby recent reports are compared, so the same problem is not fixed twice.",
+              },
+              {
+                title: "Priority scoring",
+                body: "Safety, severity, impact, waiting time and repeat reports set the priority.",
+              },
+              {
+                title: "Routing",
+                body: "The report is assigned to the right department with a response target.",
+              },
+            ].map((step, index) => (
+              <li key={step.title} className="flex gap-3">
+                <span
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 ring-1 ring-brand-100"
+                  aria-hidden="true"
+                >
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="font-medium text-slate-800">{step.title}</p>
+                  <p className="mt-0.5 leading-relaxed text-slate-500">{step.body}</p>
+                </div>
+              </li>
+            ))}
           </ol>
+        </div>
+
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-6">
+          <h2 className="text-sm font-semibold text-brand-900">
+            Nothing gets lost
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-brand-800/80">
+            Every report keeps its own ticket id, its full history and the reasoning
+            behind each decision.
+          </p>
         </div>
       </aside>
     </div>

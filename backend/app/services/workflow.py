@@ -252,6 +252,10 @@ def decide_link(
     """
     if decision not in {"accepted", "rejected"}:
         raise WorkflowError(f"Unknown decision '{decision}'")
+    if link.status != "pending":
+        raise WorkflowError(
+            f"Link was already '{link.status}' and cannot be decided again"
+        )
 
     link.status = decision
     link.decided_at = datetime.now(timezone.utc)

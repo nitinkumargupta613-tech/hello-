@@ -31,9 +31,11 @@ try {
   const markers = await page.locator(".leaflet-interactive").count();
   check(markers > 0, "map pin rendered", `${markers} marker(s)`);
 
-  // click the map to move the pin
-  const box = await page.locator(".leaflet-container").boundingBox();
-  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.45);
+  // click the map to move the pin (element relative, so a scrolled page
+  // cannot make the click land on something else)
+  const submitMap = page.locator("form .leaflet-container").first();
+  await submitMap.scrollIntoViewIfNeeded();
+  await submitMap.click({ position: { x: 180, y: 90 } });
   await page.waitForTimeout(400);
   const lat = await page.locator('input[type="number"]').first().inputValue();
   check(Boolean(lat) && Number(lat) !== 19.076, "clicking the map moves the pin", `lat=${lat}`);
@@ -117,8 +119,9 @@ try {
   const coordText = await page.locator("text=Coordinates:").textContent();
   check(/\d+\.\d{6}, \d+\.\d{6}/.test(coordText ?? ""), "coordinates are shown", coordText?.trim());
 
-  const box2 = await page.locator(".leaflet-container").first().boundingBox();
-  await page.mouse.click(box2.x + box2.width * 0.4, box2.y + box2.height * 0.6);
+  const map = page.locator("form .leaflet-container").first();
+  await map.scrollIntoViewIfNeeded();
+  await map.click({ position: { x: 120, y: 90 } });
   await page.waitForTimeout(400);
   const latAfter = await page.locator('input[type="number"]').first().inputValue();
   check(

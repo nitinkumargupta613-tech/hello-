@@ -27,16 +27,31 @@ model is not confident about for a human to check.
 
 | | |
 | --- | --- |
-| ![Admin sign in](frontend/scripts/shot-login.png) | ![Submit a report](frontend/scripts/shot-submitted.png) |
-| Admin sign in | Report submitted with the AI breakdown |
-| ![Track a ticket](frontend/scripts/shot-ticket.png) | |
-| Track a ticket | |
+| ![Report an issue](frontend/scripts/shot-report.png) | ![Operations dashboard](frontend/scripts/shot-dashboard.png) |
+| Report an issue — map, photo and coordinates | Operations dashboard — queue, review and workload |
+| ![Admin sign in](frontend/scripts/shot-login.png) | ![Track a ticket](frontend/scripts/shot-ticket.png) |
+| Admin sign in | Track a ticket |
 
 ## Tech stack
 
 - **Backend** — FastAPI, SQLAlchemy 2, PostgreSQL 16 + PostGIS 3.6, scikit-learn, sentence-transformers (all-MiniLM-L6-v2), optional CLIP via transformers
 - **Frontend** — React 19, TypeScript, Vite, Tailwind CSS 4, React Leaflet, Recharts
 - **Auth** — PBKDF2-SHA256 password hashes, opaque session tokens in the database
+
+## Design
+
+A calm palette built for long triage sessions: muted sea green for anything
+interactive, warm stone neutrals for text and surfaces, and a paper-toned
+canvas. Every token lives in `frontend/src/index.css` under `@theme`, so the
+whole app changes colour from one place.
+
+Shared building blocks (`.card`, `.btn`, `.field`, `.eyebrow`) keep spacing,
+radii and focus rings consistent. The interface follows the Web Interface
+Guidelines: visible `:focus-visible` rings, a skip link, `aria-live` regions
+for async updates, labelled form controls, `Intl` based date and number
+formatting, reduced-motion support, and dashboard filters that live in the
+URL so a filtered view can be shared or bookmarked.
+
 
 ## Quick start
 

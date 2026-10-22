@@ -38,9 +38,9 @@ export default function MapPicker({ value, onChange, center }: MapPickerProps) {
         center={[value.lat, value.lng]}
         radius={9}
         pathOptions={{
-          color: "#4f46e5",
-          fillColor: "#6366f1",
-          fillOpacity: 0.85,
+          color: "#2a655d",
+          fillColor: "#3d9a8a",
+          fillOpacity: 0.9,
           weight: 2,
         }}
       />

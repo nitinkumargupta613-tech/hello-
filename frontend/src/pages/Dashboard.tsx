@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api } from "../api";
 import AddReport from "../components/AddReport";
@@ -11,6 +12,7 @@ import {
   ageInDays,
   bandClass,
   categoryLabel,
+  formatPercent,
   isOverdue,
   statusLabel,
 } from "../format";
@@ -20,6 +22,15 @@ const STATUS_OPTIONS = ["submitted", "triaged", "assigned", "in_progress", "reso
 
 const REFRESH_MS = 20_000;
 
+const CATEGORY_OPTIONS = [
+  { key: "pothole", label: "Pothole" },
+  { key: "garbage", label: "Garbage" },
+  { key: "water_leak", label: "Water leak" },
+  { key: "streetlight", label: "Streetlight" },
+  { key: "drainage", label: "Drainage" },
+  { key: "other", label: "Other" },
+];
+
 interface Filters {
   status: string;
   category: string;
@@ -28,17 +39,21 @@ interface Filters {
   needs_review: boolean;
 }
 
-const EMPTY_FILTERS: Filters = {
-  status: "",
-  category: "",
-  department: "",
-  q: "",
-  needs_review: false,
-};
+function filtersFromParams(params: URLSearchParams): Filters {
+  return {
+    status: params.get("status") ?? "",
+    category: params.get("category") ?? "",
+    department: params.get("department") ?? "",
+    q: params.get("q") ?? "",
+    needs_review: params.get("review") === "1",
+  };
+}
 
 export default function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => filtersFromParams(searchParams), [searchParams]);
+
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [workload, setWorkload] = useState<WorkloadRow[]>([]);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
@@ -48,6 +63,33 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [showAddReport, setShowAddReport] = useState(false);
+  const [searchText, setSearchText] = useState(filters.q);
+
+  const setFilter = useCallback(
+    (key: keyof Filters, value: string | boolean) => {
+      const next = new URLSearchParams(searchParams);
+      const param = key === "needs_review" ? "review" : key;
+      if (value === "" || value === false) {
+        next.delete(param);
+      } else {
+        next.set(param, value === true ? "1" : String(value));
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  // Typing should not fire a request per keystroke.
+  useEffect(() => {
+    if (searchText === filters.q) return;
+    const timer = window.setTimeout(() => setFilter("q", searchText), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchText, filters.q, setFilter]);
+
+  // Keep the box in step when the filter is cleared or the URL changes.
+  useEffect(() => {
+    setSearchText(filters.q);
+  }, [filters.q]);
 
   const load = useCallback(
     async (options: { quiet?: boolean } = {}) => {
@@ -111,41 +153,65 @@ export default function Dashboard() {
   );
 
   const openCount = complaints.filter((row) => row.status !== "resolved").length;
+  const activeFilters =
+    (filters.status ? 1 : 0) +
+    (filters.category ? 1 : 0) +
+    (filters.department ? 1 : 0) +
+    (filters.q ? 1 : 0) +
+    (filters.needs_review ? 1 : 0);
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Operations dashboard</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Operations Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500">
             Triage queue, human review, duplicate matching and department load for the
             campus estate.
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1.5 text-xs text-slate-500" aria-live="polite">
             Live from the database
-            {updatedAt
-              ? ` · updated ${updatedAt.toLocaleTimeString()}`
-              : ""}{" "}
-            · refreshes every {REFRESH_MS / 1000}s
+            {updatedAt ? ` · updated ${updatedAt.toLocaleTimeString()}` : ""} · refreshes
+            every {REFRESH_MS / 1000}s
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={() => void load()} className="btn btn-secondary">
             Refresh
           </button>
           <button
             type="button"
             onClick={() => setShowAddReport((value) => !value)}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500"
+            className="btn btn-primary"
+            aria-expanded={showAddReport}
           >
-            {showAddReport ? "Close form" : "+ Add location"}
+            {showAddReport ? "Close Form" : "+ Add Location"}
           </button>
         </div>
       </header>
+
+      {overview ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Reports" value={overview.total} hint={`${openCount} open in view`} />
+          <StatCard
+            label="Needs Review"
+            value={overview.needs_review}
+            hint="low confidence or ambiguous"
+            tone={overview.needs_review > 0 ? "warn" : "calm"}
+          />
+          <StatCard
+            label="Duplicate Candidates"
+            value={overview.pending_links}
+            hint="waiting for a decision"
+            tone={overview.pending_links > 0 ? "warn" : "calm"}
+          />
+          <StatCard
+            label="Hotspot Clusters"
+            value={hotspots.length}
+            hint={`${hotspots[0]?.count ?? 0} reports in the worst cluster`}
+          />
+        </div>
+      ) : null}
 
       {showAddReport ? (
         <AddReport
@@ -155,56 +221,31 @@ export default function Dashboard() {
         />
       ) : null}
 
-      {overview ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Reports" value={overview.total} hint={`${openCount} open in view`} />
-          <StatCard
-            label="Needs review"
-            value={overview.needs_review}
-            hint="low confidence or ambiguous"
-            tone={overview.needs_review > 0 ? "warn" : "calm"}
-          />
-          <StatCard
-            label="Duplicate candidates"
-            value={overview.pending_links}
-            hint="waiting for a decision"
-            tone={overview.pending_links > 0 ? "warn" : "calm"}
-          />
-          <StatCard
-            label="Hotspot clusters"
-            value={hotspots.length}
-            hint={`${hotspots[0]?.count ?? 0} reports in the worst cluster`}
-          />
-        </div>
-      ) : null}
-
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-4">
+          <section className="card overflow-hidden">
+            <div className="border-b border-slate-200/80 px-5 py-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Priority queue
-                </h2>
-                <span className="text-xs text-slate-400">
+                <h2 className="eyebrow">Priority Queue</h2>
+                <span className="text-xs text-slate-500">
                   {loading ? "loading…" : `${complaints.length} complaints`}
+                  {activeFilters > 0 ? " · filtered" : ""}
                 </span>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+
+              <div className="mt-3.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <input
-                  value={filters.q}
-                  onChange={(event) =>
-                    setFilters({ ...filters, q: event.target.value })
-                  }
+                  value={searchText}
+                  onChange={(event) => setSearchText(event.target.value)}
                   placeholder="Search descriptions…"
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  aria-label="Search descriptions"
+                  className="field !py-2"
                 />
                 <select
                   value={filters.status}
-                  onChange={(event) =>
-                    setFilters({ ...filters, status: event.target.value })
-                  }
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500"
+                  onChange={(event) => setFilter("status", event.target.value)}
+                  aria-label="Filter by status"
+                  className="field !py-2"
                 >
                   <option value="">All statuses</option>
                   {STATUS_OPTIONS.map((option) => (
@@ -215,31 +256,22 @@ export default function Dashboard() {
                 </select>
                 <select
                   value={filters.category}
-                  onChange={(event) =>
-                    setFilters({ ...filters, category: event.target.value })
-                  }
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500"
+                  onChange={(event) => setFilter("category", event.target.value)}
+                  aria-label="Filter by category"
+                  className="field !py-2"
                 >
                   <option value="">All categories</option>
-                  {Object.entries({
-                    pothole: "Pothole",
-                    garbage: "Garbage",
-                    water_leak: "Water leak",
-                    streetlight: "Streetlight",
-                    drainage: "Drainage",
-                    other: "Other",
-                  }).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
                 <select
                   value={filters.department}
-                  onChange={(event) =>
-                    setFilters({ ...filters, department: event.target.value })
-                  }
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500"
+                  onChange={(event) => setFilter("department", event.target.value)}
+                  aria-label="Filter by department"
+                  className="field !py-2"
                 >
                   <option value="">All departments</option>
                   {workload.map((row) => (
@@ -249,33 +281,57 @@ export default function Dashboard() {
                   ))}
                 </select>
               </div>
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={filters.needs_review}
-                  onChange={(event) =>
-                    setFilters({ ...filters, needs_review: event.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                />
-                Only complaints waiting for human review
-              </label>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={filters.needs_review}
+                    onChange={(event) => setFilter("needs_review", event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  Only complaints waiting for human review
+                </label>
+                {activeFilters > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
+                    className="btn btn-ghost !px-2 !py-1 text-xs"
+                  >
+                    Clear Filters
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {error ? (
-              <p className="px-5 py-4 text-sm text-rose-600">{error}</p>
+              <p className="px-5 py-4 text-sm text-rose-600" aria-live="polite">
+                {error}
+              </p>
             ) : null}
 
             <div className="max-h-[32rem] overflow-auto">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="sticky top-0 z-10 bg-slate-50/95 text-xs uppercase tracking-[0.06em] text-slate-500 backdrop-blur">
                   <tr>
-                    <th className="px-5 py-2 font-medium">Ticket</th>
-                    <th className="px-3 py-2 font-medium">Category</th>
-                    <th className="px-3 py-2 font-medium">Priority</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Department</th>
-                    <th className="px-5 py-2 font-medium">Age</th>
+                    <th scope="col" className="px-5 py-2.5 font-medium">
+                      Ticket
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">
+                      Category
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">
+                      Priority
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">
+                      Status
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-medium">
+                      Department
+                    </th>
+                    <th scope="col" className="px-5 py-2.5 text-right font-medium">
+                      Age
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -283,17 +339,17 @@ export default function Dashboard() {
                     <tr
                       key={row.id}
                       onClick={() => setSelected(row)}
-                      className={`cursor-pointer transition hover:bg-brand-50/60 ${
-                        selected?.id === row.id ? "bg-brand-50" : ""
+                      className={`dashboard-row cursor-pointer transition-colors duration-150 hover:bg-brand-50/50 ${
+                        selected?.id === row.id ? "bg-brand-50/70" : ""
                       }`}
                     >
                       <td className="px-5 py-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-slate-700">
+                          <span className="font-mono text-xs text-slate-700" translate="no">
                             {row.ticket_id}
                           </span>
                           {row.needs_review ? (
-                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800">
                               review
                             </span>
                           ) : null}
@@ -305,14 +361,14 @@ export default function Dashboard() {
                       <td className="px-3 py-2.5 text-xs text-slate-600">
                         {categoryLabel(row.category_key)}
                         {row.category_confidence !== null ? (
-                          <span className="ml-1 text-slate-400">
-                            {Math.round(row.category_confidence * 100)}%
+                          <span className="ml-1 tabular-nums text-slate-500">
+                            {formatPercent(row.category_confidence)}
                           </span>
                         ) : null}
                       </td>
                       <td className="px-3 py-2.5">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${bandClass(
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ${bandClass(
                             row.priority_band,
                           )}`}
                         >
@@ -325,10 +381,12 @@ export default function Dashboard() {
                       <td className="px-3 py-2.5 text-xs text-slate-600">
                         {row.department_key ?? "—"}
                       </td>
-                      <td className="px-5 py-2.5 text-xs">
-                        <span className="text-slate-600">{ageInDays(row.created_at)}d</span>
+                      <td className="px-5 py-2.5 text-right text-xs">
+                        <span className="tabular-nums text-slate-600">
+                          {ageInDays(row.created_at)}d
+                        </span>
                         {isOverdue(row.sla_due_at, row.status) ? (
-                          <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-600">
+                          <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-700">
                             sla
                           </span>
                         ) : null}
@@ -337,7 +395,7 @@ export default function Dashboard() {
                   ))}
                   {!loading && complaints.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-400">
+                      <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-500">
                         No complaint matches these filters.
                       </td>
                     </tr>
@@ -348,6 +406,11 @@ export default function Dashboard() {
           </section>
 
           <DuplicateInbox links={links} onChanged={() => void load()} />
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <WorkloadPanel rows={workload} />
+            <HotspotPanel hotspots={hotspots} />
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -358,15 +421,13 @@ export default function Dashboard() {
               onClose={() => setSelected(null)}
             />
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+            <div className="card border-dashed p-8 text-center text-sm text-slate-500">
               Select a complaint from the queue to see the AI reasoning, priority
               breakdown and duplicate matches.
             </div>
           )}
 
           <ReviewQueue complaints={reviewQueue} onChanged={() => void load()} />
-          <WorkloadPanel rows={workload} />
-          <HotspotPanel hotspots={hotspots} />
         </div>
       </div>
     </div>
@@ -385,16 +446,16 @@ function StatCard({
   tone?: "calm" | "warn";
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+    <div className="card p-4">
+      <p className="eyebrow">{label}</p>
       <p
-        className={`mt-1 text-2xl font-semibold ${
-          tone === "warn" && value > 0 ? "text-amber-600" : "text-slate-900"
+        className={`mt-1.5 text-2xl font-semibold tabular-nums ${
+          tone === "warn" && value > 0 ? "text-amber-700" : "text-slate-900"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 text-xs text-slate-400">{hint}</p>
+      <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
     </div>
   );
 }

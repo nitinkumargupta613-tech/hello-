@@ -1,25 +1,222 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   CivicSense design tokens
+
+   A calm palette: muted teal for anything interactive, warm stone neutrals
+   for text and surfaces, and a paper-toned canvas. Low saturation keeps
+   long reading sessions comfortable while the type stays high contrast.
+--------------------------------------------------------------------------- */
 @theme {
-  --color-ink-50: #f6f7f9;
-  --color-ink-900: #0f172a;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
+  /* Primary - muted sea green */
+  --color-brand-50: #f1f8f6;
+  --color-brand-100: #dcf0eb;
+  --color-brand-200: #bce0d7;
+  --color-brand-300: #90cbbf;
+  --color-brand-400: #5eb3a3;
+  --color-brand-500: #3d9a8a;
+  --color-brand-600: #2f7f72;
+  --color-brand-700: #2a655d;
+  --color-brand-800: #27514c;
+  --color-brand-900: #234240;
+
+  /* Warm neutrals (replaces the cool default slate scale) */
+  --color-slate-50: #faf9f7;
+  --color-slate-100: #f4f2ef;
+  --color-slate-200: #e8e5e0;
+  --color-slate-300: #d5d0c8;
+  --color-slate-400: #a9a29a;
+  --color-slate-500: #736a61;
+  --color-slate-600: #57504a;
+  --color-slate-700: #474139;
+  --color-slate-800: #2e2a25;
+  --color-slate-900: #1d1a17;
+
+  /* Canvas and ink */
+  --color-ink-50: #f7f6f2;
+  --color-ink-900: #1d1a17;
+
+  /* Softened status colours */
+  --color-amber-50: #fdf8ed;
+  --color-amber-100: #f8ecc9;
+  --color-amber-200: #f0d894;
+  --color-amber-600: #a16207;
+  --color-amber-700: #854d0e;
+  --color-amber-800: #713f12;
+
+  --color-rose-50: #fdf2f2;
+  --color-rose-100: #fbe3e3;
+  --color-rose-200: #f6cccc;
+  --color-rose-600: #c2414b;
+  --color-rose-700: #a32f3a;
+  --color-rose-800: #882c36;
+
+  --color-emerald-50: #f0f9f4;
+  --color-emerald-100: #d6f0e1;
+  --color-emerald-200: #b0e1c6;
+  --color-emerald-600: #2f7d55;
+  --color-emerald-700: #276647;
+  --color-emerald-800: #21523a;
+
+  --color-sky-50: #f0f6f9;
+  --color-sky-100: #dcebf2;
+  --color-sky-200: #bcd8e5;
+  --color-sky-600: #2f6d8a;
+  --color-sky-700: #275a72;
+
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui,
+    -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+
+  --shadow-soft: 0 1px 2px rgb(29 26 23 / 0.04), 0 4px 16px -4px rgb(29 26 23 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(29 26 23 / 0.05), 0 12px 32px -8px rgb(29 26 23 / 0.12);
 }
 
-html,
-body,
-#root {
-  height: 100%;
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-ink-50 text-slate-800 antialiased;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* No double tap zoom delay on touch. */
+  button,
+  a,
+  label,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* A visible focus ring on every interactive element, but never on click. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+
+  /* Native selects need explicit colours to survive Windows dark mode. */
+  select {
+    background-color: #ffffff;
+    color: var(--color-slate-800);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-slate-300);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-slate-400);
+  }
 }
 
-body {
-  @apply bg-ink-50 text-slate-800 antialiased;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft;
+  }
+
+  .card-hover {
+    @apply transition-[box-shadow,transform,border-color] duration-200;
+  }
+
+  .card-hover:hover {
+    @apply -translate-y-0.5 border-brand-200 shadow-lift;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm
+      text-slate-800 shadow-sm transition-[border-color,box-shadow] duration-150
+      placeholder:text-slate-400 hover:border-slate-300
+      focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100/70;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm
+      font-semibold transition-[background-color,box-shadow,transform,color] duration-150
+      active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300
+      hover:bg-slate-50;
+  }
+
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.08em] text-slate-500;
+  }
 }
 
 .leaflet-container {
   @apply rounded-xl border border-slate-200;
   z-index: 0;
+}
+
+/* Long tables stay cheap to render: rows outside the viewport skip layout. */
+.dashboard-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

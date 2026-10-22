@@ -8,8 +8,8 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const BAND_STYLES: Record<string, string> = {
   critical: "bg-rose-100 text-rose-700 ring-rose-200",
-  high: "bg-orange-100 text-orange-700 ring-orange-200",
-  medium: "bg-amber-100 text-amber-700 ring-amber-200",
+  high: "bg-amber-100 text-amber-800 ring-amber-200",
+  medium: "bg-sky-100 text-sky-700 ring-sky-200",
   low: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
@@ -23,12 +23,12 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  pothole: "#f43f5e",
-  garbage: "#10b981",
-  water_leak: "#3b82f6",
-  streetlight: "#f59e0b",
-  drainage: "#8b5cf6",
-  other: "#64748b",
+  pothole: "#c2414b",
+  garbage: "#2f7d55",
+  water_leak: "#2f6d8a",
+  streetlight: "#a16207",
+  drainage: "#6d5aa8",
+  other: "#7c746b",
 };
 
 export const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS);
@@ -56,7 +56,31 @@ export function isOverdue(slaDueAt: string | null, status: string): boolean {
   return new Date(slaDueAt).getTime() < Date.now();
 }
 
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+const percentFormat = new Intl.NumberFormat(undefined, {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
+
+const scoreFormat = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 0,
+});
+
 export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString();
+  if (!iso) return "—";
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return dateTimeFormat.format(parsed);
+}
+
+export function formatPercent(value: number): string {
+  return percentFormat.format(value);
+}
+
+export function formatScore(value: number): string {
+  return scoreFormat.format(value);
 }

@@ -9,10 +9,10 @@ const FACTOR_ORDER = [
 ];
 
 const COLORS: Record<string, string> = {
-  safety_risk: "bg-rose-500",
-  severity: "bg-orange-500",
-  community_impact: "bg-violet-500",
-  wait_time: "bg-sky-500",
+  safety_risk: "bg-rose-400",
+  severity: "bg-amber-400",
+  community_impact: "bg-brand-400",
+  wait_time: "bg-sky-400",
   related_reports: "bg-emerald-500",
 };
 
@@ -36,18 +36,18 @@ export default function PriorityBreakdown({ explanation, score, band }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-semibold text-slate-900">
+        <span className="text-3xl font-semibold tabular-nums text-slate-900">
           {score !== undefined ? score : explanation.base_score}
         </span>
         <span className="text-sm text-slate-500">/ 100</span>
         {band ? (
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">
             {band}
           </span>
         ) : null}
       </div>
 
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {FACTOR_ORDER.map((key) => {
           const contribution = explanation.contributions[key] ?? 0;
           const weight = explanation.weights[key] ?? 0;
@@ -55,18 +55,22 @@ export default function PriorityBreakdown({ explanation, score, band }: Props) {
           const width = `${(contribution / max) * 100}%`;
           return (
             <li key={key} className="text-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-medium text-slate-700">
                   {explanation.labels[key] ?? key}
-                  <span className="ml-2 text-xs text-slate-400">
+                  <span className="ml-2 text-xs tabular-nums text-slate-500">
                     weight {weight} · factor {factor.toFixed(2)}
                   </span>
                 </span>
-                <span className="font-semibold text-slate-800">+{contribution}</span>
+                <span className="font-semibold tabular-nums text-slate-800">
+                  +{contribution}
+                </span>
               </div>
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className={`h-full rounded-full ${COLORS[key] ?? "bg-slate-400"}`}
+                  className={`h-full rounded-full transition-[width] duration-500 ${
+                    COLORS[key] ?? "bg-slate-300"
+                  }`}
                   style={{ width }}
                 />
               </div>
@@ -77,11 +81,12 @@ export default function PriorityBreakdown({ explanation, score, band }: Props) {
 
       {explanation.sla_boost > 0 ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          SLA escalation: past the {explanation.sla_hours}h target, +{explanation.sla_boost} points.
+          SLA escalation: past the {explanation.sla_hours}h target, +{explanation.sla_boost}{" "}
+          points.
         </p>
       ) : null}
 
-      <p className="text-xs text-slate-500">{explanation.summary}</p>
+      <p className="text-xs leading-relaxed text-slate-500">{explanation.summary}</p>
     </div>
   );
 }

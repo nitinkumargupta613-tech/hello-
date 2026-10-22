@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { api } from "./api";
@@ -9,9 +9,9 @@ import Submit from "./pages/Submit";
 import TicketStatus from "./pages/TicketStatus";
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+  `rounded-xl px-3.5 py-2 text-sm font-medium transition-[background-color,color] duration-150 ${
     isActive
-      ? "bg-brand-600 text-white shadow-sm"
+      ? "bg-brand-50 text-brand-800 shadow-[inset_0_0_0_1px_var(--color-brand-100)]"
       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
   }`;
 
@@ -49,7 +49,9 @@ function AdminOnly({ children }: { children: React.ReactElement }) {
 
   if (checking) {
     return (
-      <p className="py-16 text-center text-sm text-slate-400">Checking your session…</p>
+      <div className="flex min-h-64 items-center justify-center">
+        <p className="animate-pulse text-sm text-slate-500">Checking your session…</p>
+      </div>
     );
   }
   if (!session) {
@@ -57,9 +59,9 @@ function AdminOnly({ children }: { children: React.ReactElement }) {
   }
   if (session.role !== "admin") {
     return (
-      <div className="mx-auto max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-        <h1 className="text-lg font-semibold text-amber-900">Admins only</h1>
-        <p className="mt-1 text-sm text-amber-800">
+      <div className="card mx-auto max-w-md p-8 text-center">
+        <h1 className="text-lg font-semibold text-slate-900">Admins Only</h1>
+        <p className="mt-2 text-sm text-slate-600">
           You are signed in as <span className="font-mono">{session.username}</span>. The
           operations dashboard needs an admin account.
         </p>
@@ -71,6 +73,14 @@ function AdminOnly({ children }: { children: React.ReactElement }) {
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(loadSession);
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  // Move focus to the main region on navigation so screen reader and keyboard
+  // users start at the new content instead of the top of the nav.
+  useEffect(() => {
+    mainRef.current?.focus({ preventScroll: true });
+  }, [location.pathname]);
 
   async function signOut() {
     try {
@@ -83,26 +93,39 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-full">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main content
+      </a>
+
+      <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-lg font-bold text-white">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-lg font-bold text-white shadow-sm"
+              aria-hidden="true"
+            >
               C
             </div>
             <div>
               <p className="text-base font-semibold leading-tight text-slate-900">
                 CivicSense
               </p>
-              <p className="text-xs text-slate-500">Civic intelligence &amp; issue resolution</p>
+              <p className="text-xs text-slate-500">
+                Civic intelligence &amp; issue resolution
+              </p>
             </div>
           </div>
-          <nav className="flex items-center gap-1">
+
+          <nav className="flex items-center gap-1" aria-label="Main">
             <NavLink to="/" end className={navLink}>
-              Report an issue
+              Report an Issue
             </NavLink>
             <NavLink to="/ticket" className={navLink}>
-              Track a ticket
+              Track a Ticket
             </NavLink>
             <NavLink to="/dashboard" className={navLink}>
               Operations
@@ -115,9 +138,9 @@ export default function App() {
                 <button
                   type="button"
                   onClick={signOut}
-                  className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="btn btn-ghost !px-2.5 !py-1.5 text-sm"
                 >
-                  Sign out
+                  Sign Out
                 </button>
               </div>
             ) : null}
@@ -125,7 +148,12 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-8">
+      <main
+        id="main"
+        ref={mainRef}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 focus:outline-none"
+      >
         <Routes>
           <Route path="/" element={<Submit />} />
           <Route path="/ticket" element={<TicketStatus />} />
@@ -140,6 +168,15 @@ export default function App() {
           />
         </Routes>
       </main>
+
+      <footer className="border-t border-slate-200/70 bg-white/60">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-4 text-xs text-slate-500">
+          <p>CivicSense · AI assisted civic issue triage</p>
+          <p>
+            Categories: Pothole · Garbage · Water leak · Streetlight · Drainage · Other
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
